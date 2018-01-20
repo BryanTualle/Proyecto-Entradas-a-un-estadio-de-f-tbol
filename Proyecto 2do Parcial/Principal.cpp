@@ -19,6 +19,11 @@
 #include <windows.h>
 #include "Pila.h"
 #include "PilaFloat.h"
+#include  <pthread.h>
+#include <fstream>
+#include <cstring>
+#include<time.h> 
+//#include "imagen.h"
 
 
 using namespace std;
@@ -31,15 +36,39 @@ int prioridad (char );
 Pila *infijaPostfija(char []);
 Pila *infijaPrefija(char []);
 void GenerarAudio(char []);
+void GenerarQR(char expresion[]);
+void GenerarPDF(char [], char []);
+char limitacionIngreso(char []);
+bool validacionExpresion(char []);
+float operacion(float , float , char );
+float evaluarPostFija(char []);
+char soloLetras(char []);
+
+
+void* AlgunaFuncion(void* ) ;
+void recuperar(string name1);
+string generar_1();
+struct tm *localtime(const time_t *tiempoPtr);
+void recuperar(string name1);
+string generar_1();
+void GenerarBACKUP(char [], char []);
+//void imagen();
+
 
 //////////////////////////////////////////////////
 //Programa Principal
 main()
 {
-	char expresion[50];
+	pthread_t thread1, thread2; 
+	pthread_create(&thread1, NULL, AlgunaFuncion, NULL); 
+	
+	
+	char expresion[50], expresion2[50];
 	Pila *postFija, *preFija;
 	int opcion;
 
+	//system("F:\\agente\\agente\\WinAppManejoMSAgente.exe");
+	home:
 	system("Cls");
 	cout << "\t\t\t\t\tUNIVERSIDAD DE LAS FUERZAS ARMADAS ESPE" << endl;
 	cout << "\t\t\t\t\t\tESTRUCTURA DE DATOS 2479" << endl;
@@ -50,7 +79,7 @@ main()
 	cout << "\t\t\t\tCarrera:\t Ing. Sistemas e informatica" << endl << endl;
 	bool ind = false;
 	system("Color f9");
-	string menu[] = { "1.-Notacion POSTfija","2.-Notacion PREfija","3.-Codigo QR","4.-Ayuda","5.-Generar PDF","6.-Salir" };
+	string menu[] = { "1.-Notacion POSTfija","2.-Notacion PREfija","3.-BackUp","4.-Ayuda","5.-Generar PDF","6.-Salir" };
 	for (int i = 0; i<6; i++) 
 	{
 		cout << menu[i] << endl;
@@ -87,13 +116,20 @@ main()
 						
 						system("cls");
 						cout<<"\nExpresion Infija: ";
-						cin>>expresion;
+						limitacionIngreso(expresion);
 						if(expresionBalanceada(expresion))
 						{
 							postFija = infijaPostfija(expresion);
+							cout<<"\nPOSTFIJA:"<<endl;
 							postFija->imprimirExpresion(postFija);
 							cout<<endl<<endl;
-							//GenerarAudio(expresion);
+							postFija->obtenerExpresion(postFija, expresion2);
+							cout<<"\nRESULTADO:\t"<<evaluarPostFija(expresion2)<<endl;
+							GenerarQR(expresion);
+							GenerarPDF(expresion, expresion2);
+							system("start GENERADORQR.jar");
+							system("start GENERADORPDF.jar");
+							GenerarAudio(expresion);
 						}
 						else
 						{
@@ -101,7 +137,7 @@ main()
 						}
 								
 						system("pause");
-						main();
+						goto home;
 					}
 				}
 				
@@ -128,11 +164,11 @@ main()
 						}	
 							
 						system("pause");
-						main();
+						goto home;
 					}
 				}
 				
-				///////////////////////////////////////////////////////////////// OPCIÓN 3
+				///////////////////////////////////////////////////////////////// BACKUP
 				for (int i = 0; i<12; i++) 
 				{
 					if (coord.X == i&&coord.Y == 11) 
@@ -140,10 +176,40 @@ main()
 						ind = true;
 						system("Color f9");
 						system("cls");
-						cout << "AQUI VA LA OPCION 3" << endl;
+									
+						int op=0;
+						string a;
+						do{
+							do{
+								printf("\n1.-RESPALDAR\n");
+								printf("2.-RECUPERAR");
+								printf("\n0.-SALIR");
+								printf("\nIngrese una opcion: ");
+								scanf("%d",&op);	
+								}while(op<0||op>2);
+								
+								switch (op)
+								{
+									case 1: {
+										GenerarBACKUP(expresion, expresion2);
+										a = generar_1();
+										break;
+									}
+									case 2: {
+										ifstream f;
+										string fich=a;
+										FILE* fichero;
+										f.open(fich.c_str() ,ios::in);
+										recuperar(fich);
+										break;
+									} 
+								}
+						}while (op != 0);
+						
+		
 						system("pause");
 
-						main();
+						goto home;
 					}
 				}
 				
@@ -155,8 +221,8 @@ main()
 						ind = true;
 						system("Color f9");
 						system("cls");
-						ShellExecute(NULL, TEXT("open"), TEXT("G:\\ESPE 4 SEMESTRE\\ESTRUCTURAS\\Primer parcial\\Proyecto I\\Ayuda\\Ayuda Listas SimplesP.chm"), NULL, NULL, SW_SHOWNORMAL);
-						main();
+						ShellExecute(NULL, TEXT("open"), TEXT("C:\\PDF\\ayuda.chw"), NULL, NULL, SW_SHOWNORMAL);
+						goto home;
 					}
 				}
 				
@@ -171,7 +237,7 @@ main()
 						cout << endl << "Programa realizado por: Sandra Castro / Bryan Tualle" << endl;
 						cout << "         <<<<<<CopyLeft P&C (licencia de codigo abierto)>>>>>>" << endl;
 						system("pause");
-						main();
+						goto home;
 					}
 				}
 				
@@ -183,6 +249,7 @@ main()
 						ind = true;
 						system("Color f9");
 						system("cls");
+						//imagen();
 						cout << endl << "<<<<<<<<<Gracias por usar nuestro programa>>>>>>>>>" << endl;
 						exit(1);
 						main();
@@ -200,8 +267,79 @@ main()
 	
 }
 
-
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 //DESARROLLO DE FUNCIONES
+
+char limitacionIngreso(char A[])
+{
+	char letra;
+	int i=0,l=0;
+	fflush(stdin);
+	letra=getch();
+	while(letra!=13 && i<50)
+	{
+		fflush(stdin);
+		if(letra!=8)
+		{
+			if(letra==123||letra==125||letra==93 ||letra==91 ||letra==94 || letra==42 || letra==43 || letra==47 || letra==45||letra==97 || letra==99 || letra==110 || letra==111|| letra==101|| letra==115|| letra==116 || letra==40 || letra==41|| letra==46|| letra==13 || ((letra>=48)&&(letra<=57)) )
+			{
+				if(letra!=13)
+				{
+					printf("%c",letra);
+					fflush(stdin);
+					A[i]=letra;
+					i++;
+				}
+			}
+		}
+		else
+		{
+			l=strlen(A);
+			if(l>0)
+			{
+				printf("\b \b");//mueve el cursor a la izquierda
+				A[l-1]='\0';
+				i--;
+			}
+		}
+		letra=getch();
+	}
+	A[i]='\0';
+	
+}
+
+
+float operacion(float operando1, float operando2, char operador)
+{
+	switch(operador)
+	{
+		case '+':
+			return operando1 + operando2;
+		break;
+
+		case '-':
+			return operando1 - operando2;
+		break;
+
+		case '*':
+			return operando1 * operando2;
+		break;
+
+		case '/':
+			return operando1 / operando2;
+		break;
+
+		case '^':
+			return pow(operando1, operando2);
+		break;
+
+	}
+}
+
+
+
 int expresionBalanceada (char expresion[])
 {
 	Pila *pilaAuxiliar;
@@ -328,6 +466,50 @@ Pila *infijaPostfija(char expresion[])
 }
 
 
+float evaluarPostFija(char expresion[])
+{
+	PilaFloat *pila;
+	int longitud, i, j;
+	char valor;
+	float operando1, operando2, resultado;
+
+
+
+	longitud = strlen(expresion);
+	int angulo=0;
+
+	for(i=0;i<longitud;i++)
+	{
+	    if(expresion[i]!=' ')
+        {
+        	
+			
+            if( ((expresion[i]>=48)&&(expresion[i]<=57)) ||  expresion[i]==115 || expresion[i]==99 || expresion[i]==116)
+            {
+            	
+
+				valor = expresion[i];
+                pila->insertarPushFloat(atof(&valor),pila);
+            }
+            else
+            {
+                if(esOperador(expresion[i]))
+                {
+                    pila->extraerPopFloat(&operando2,pila);
+                    pila->extraerPopFloat(&operando1, pila);
+                    resultado = operacion(operando1, operando2, expresion[i]);
+                    pila->insertarPushFloat(resultado, pila);
+                }
+            }
+        }
+
+	}
+
+	return pila->GetValor();
+	//return 1;
+}
+
+
 Pila *infijaPrefija(char expresion[])
 {
 	Pila *pila, *preFija;
@@ -397,7 +579,72 @@ Pila *infijaPrefija(char expresion[])
 	return preFija;
 }
 
-/*
+void GenerarQR(char expresion[])
+{
+	FILE *archivo = fopen("C:\\QR\\QR.txt", "w");
+
+	//cout<< texto<<endl;
+
+	
+	if(archivo != NULL)
+	{
+		fprintf(archivo, "%s", expresion);
+
+		fclose(archivo);
+	}
+	else
+	{
+		printf("\n\n\tNO PUDO GENERAR EL ARCHIVO 'QR.txt'\n'");
+	}
+	
+}
+
+void GenerarBACKUP(char expresion[], char expresion2[])
+{
+	FILE *archivo = fopen("C:\\Backup\\PRINCIPAL\\C00.txt", "a");
+
+	//cout<< texto<<endl;
+
+	
+	if(archivo != NULL)
+	{
+		fprintf(archivo, "\nExpresión: %s\nNotacion: %s\n", expresion, expresion2);
+
+		fclose(archivo);
+	}
+	else
+	{
+		printf("\n\n\tNO PUDO GENERAR EL ARCHIVO 'PDF.txt'\n'");
+	}
+	
+	
+}
+
+
+void GenerarPDF(char expresion[], char expresion2[])
+{
+	FILE *archivo = fopen("C:\\PDF\\PDF.txt", "a");
+
+	//cout<< texto<<endl;
+
+	
+	if(archivo != NULL)
+	{
+		fprintf(archivo, "\nExpresión: %s\nNotacion: %s\n", expresion, expresion2);
+
+		fclose(archivo);
+	}
+	else
+	{
+		printf("\n\n\tNO PUDO GENERAR EL ARCHIVO 'PDF.txt'\n'");
+	}
+	
+	
+}
+
+
+
+
 void GenerarAudio(char expresion[])
 {
 	FILE *archivo = fopen("Audio.vbs", "w");
@@ -406,35 +653,9 @@ void GenerarAudio(char expresion[])
 	char texto2[] = " \" ";
 	char texto3[] = " ";
 	
-	char suma[]=" mas ";
-	char resta[]=" menos ";
-	char multi[]=" por ";
-	char division[]=" dividido ";
-	char potencia[]=" elevado al ";
-	int posicion=0;
-	
-	for(int i=0; i<strlen(expresion); i++)
-	{
-		if(expresion[i]=='+' || expresion[i]=='-' || expresion[i]=='*'||expresion[i]=='/' || expresion[i]=='^')
-		{
-			if(expresion[i]=='+') strcat(texto3, suma);
-			if(expresion[i]=='-') strcat(texto3, resta);
-			if(expresion[i]=='*') strcat(texto3, multi);
-			if(expresion[i]=='/') strcat(texto3, division);
-			if(expresion[i]=='^') strcat(texto3, potencia);
-		}
-		else
-		{
-			posicion = strlen(texto3);
-			if(i==0) texto3[0]=expresion[i];
-			else texto3[posicion]=expresion[i];
-		}
-	}
-	//cout<< texto<<endl;
-
-	strcat(texto, texto3);
+	strcat(texto, expresion);
 	strcat(texto, texto2);
-	cout<<texto<<endl;
+	//cout<<texto<<endl;
 	
 	if(archivo != NULL)
 	{
@@ -447,8 +668,80 @@ void GenerarAudio(char expresion[])
 		printf("\n\n\tNO PUDO GENERAR EL ARCHIVO 'Audio.vbs'\n'");
 	}
 	
-	//system("Audio.vbs");
+	system("Audio.vbs");
 	
 }
-*/
 
+void* AlgunaFuncion(void* ) 
+{ 
+	system("F:\\agente\\agente\\WinAppManejoMSAgente.exe");
+	return NULL; 
+} 
+
+void recuperar(string name1) 
+{
+	time_t fsistema=time(0);
+	struct tm *tlocal= localtime(&fsistema);
+	int data1=0;
+	char cad[100];
+	char y[100]; 
+	std::strcpy(y, name1.c_str());
+	puts(y);
+	strftime(cad, 100, "C:/Backup/RECUPERAR/hora(%HH-%MM-%SS)fecha(%dD-%mM-%YA)", tlocal);
+	FILE* fichero;//Puntero de tipo archivo
+	FILE *archivo;
+	string name2 = cad;
+	name2 = y;
+	archivo=fopen("C:/Backup/PRINCIPAL/C00.txt","r");
+	fichero = fopen(name2.c_str(), "w+");
+	 while ( (data1 = fgetc (archivo)) != EOF ) {
+            fputc ( data1, fichero);
+        }
+        fclose(archivo);
+        fclose (fichero);
+	printf("Recuperado...");
+	getch();
+}
+string generar_1()
+{
+	time_t fsistema=time(0);
+	struct tm *tlocal= localtime(&fsistema);
+	
+	char cad[100];
+	int data1=0;
+	strftime(cad, 100, "C:/Backup/RESPALDO/hora(%HH-%MM-%SS)fecha(%d-%m-%Y)", tlocal);
+	FILE* fichero;//Puntero de tipo archivo
+	FILE *archivo;
+	string name1 = cad;
+	name1 = name1 + ".txt";
+	cout << name1;
+	archivo=fopen("C:/Backup/PRINCIPAL/C00.txt","r");
+	fichero = fopen(name1.c_str(), "w+");//fopen con w+ crea un archivo y lo edita se crea en la raiz del programa
+	 while ( (data1 = fgetc (archivo)) != EOF ) {
+            fputc ( data1, fichero);
+        }
+        
+        fclose (archivo);
+        fclose (fichero);
+	printf("\nProceso completado\n");
+	getch();
+	return name1;
+}
+/*
+void imagen()
+{
+
+    hConWnd = GetConsoleWndHandle();
+    if (hConWnd)
+    {
+        // select a bitmap file you have or use one of the files in the Windows folder
+        // filename, handle, ID, ulcX, ulcY, width, height   0,0 auto-adjusts
+        BCX_Bitmap("LOGO.bmp",hConWnd,123,230,65,0,0);
+        //system("pause>nul");
+        Sleep(3000);
+        //getchar();
+    }
+    system("cls");
+
+}
+*/

@@ -33,6 +33,7 @@ class Pila
         void imprimirExpresion(Pila *lista);
 		void infijaPostfija(char expresion[]);
 		void infijaPrefija(char expresion[]);
+		void obtenerExpresion(Pila *lista, char expresion[]);
 
 
 };
@@ -172,14 +173,29 @@ void Pila::imprimirExpresion(Pila *lista)
 	Pila *aux = new Pila();
 	
 	aux = lista;
-	cout<<"\nPREFIJA";
+	
 	while(aux!=NULL)
 	{
-		cout<<" "<<aux->simbolo;
+		//cout<<" "<<aux->simbolo;
+		cout<<aux->simbolo;
 		aux = aux->siguiente;
 	}
 }
 
+void Pila::obtenerExpresion(Pila *lista, char expresion[])
+{
+	Pila *aux = new Pila();
+	int i=0;
+	aux = lista;
+	
+	while(aux!=NULL)
+	{
+		expresion[i]=aux->simbolo;
+		aux = aux->siguiente;
+		i++;
+	}
+	expresion[i]='\0';
+}
 
 
 
