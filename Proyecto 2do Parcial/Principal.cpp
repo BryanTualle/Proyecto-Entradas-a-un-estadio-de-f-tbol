@@ -23,7 +23,7 @@
 #include <fstream>
 #include <cstring>
 #include<time.h> 
-//#include "imagen.h"
+#include "imagen.h"
 
 
 using namespace std;
@@ -33,8 +33,8 @@ using namespace std;
 int expresionBalanceada (char []);
 int esOperador(char );
 int prioridad (char );
-Pila *infijaPostfija(char []);
-Pila *infijaPrefija(char []);
+Pila infijaPostfija(char [], Pila *&);
+Pila infijaPrefija(char [], Pila *&);
 void GenerarAudio(char []);
 void GenerarQR(char expresion[]);
 void GenerarPDF(char [], char []);
@@ -43,27 +43,28 @@ bool validacionExpresion(char []);
 float operacion(float , float , char );
 float evaluarPostFija(char []);
 char soloLetras(char []);
+void invertir(char []);
+float convertirFlotante(char []);
 
-
-void* AlgunaFuncion(void* ) ;
+void* Agente(void* );
 void recuperar(string name1);
 string generar_1();
 struct tm *localtime(const time_t *tiempoPtr);
 void recuperar(string name1);
 string generar_1();
 void GenerarBACKUP(char [], char []);
-//void imagen();
-
+void imagen();
+void vaciarExpresion(char []);
 
 //////////////////////////////////////////////////
 //Programa Principal
 main()
 {
 	pthread_t thread1, thread2; 
-	pthread_create(&thread1, NULL, AlgunaFuncion, NULL); 
+	//pthread_create(&thread1, NULL, AlgunaFuncion, NULL); 
 	
 	
-	char expresion[50], expresion2[50];
+	char expresion[100], expresion2[100];
 	Pila *postFija, *preFija;
 	int opcion;
 
@@ -114,22 +115,32 @@ main()
 						system("Color f9");
 						system("cls");
 						
-						system("cls");
+						vaciarExpresion(expresion);
 						cout<<"\nExpresion Infija: ";
 						limitacionIngreso(expresion);
 						if(expresionBalanceada(expresion))
 						{
-							postFija = infijaPostfija(expresion);
+							
+							infijaPostfija(expresion, postFija);
+							
 							cout<<"\nPOSTFIJA:"<<endl;
 							postFija->imprimirExpresion(postFija);
 							cout<<endl<<endl;
+							
 							postFija->obtenerExpresion(postFija, expresion2);
+							//cout<<"\nExpresion a Analizar: "<<expresion2<<endl;
+							//printf("\n%s", expresion2);
+							
 							cout<<"\nRESULTADO:\t"<<evaluarPostFija(expresion2)<<endl;
+							
+							
+							/*
 							GenerarQR(expresion);
 							GenerarPDF(expresion, expresion2);
 							system("start GENERADORQR.jar");
 							system("start GENERADORPDF.jar");
 							GenerarAudio(expresion);
+							*/
 						}
 						else
 						{
@@ -150,13 +161,36 @@ main()
 						system("Color f9");
 						system("cls");
 						
+						vaciarExpresion(expresion);
 						cout<<"\nExpresion Infija: ";
-						cin>>expresion;
+						limitacionIngreso(expresion);
+						
 						if(expresionBalanceada(expresion))
 						{
-							preFija = infijaPrefija(expresion);
+						
+							infijaPrefija(expresion, preFija);
+							//infijaPrefija(expresion, preFija);
+							
+							cout<<"\nPREFIJA:"<<endl;
 							preFija->imprimirExpresion(preFija);
 							cout<<endl<<endl;
+							
+							//postFija->obtenerExpresion(preFija, expresion2);
+							//cout<<"\nExpresion a Analizar: "<<expresion2<<endl;
+							//printf("\n%s", expresion2);
+							
+							//cout<<"\nRESULTADO:\t"<<evaluarPostFija(expresion2)<<endl;
+							
+							
+							/*
+							GenerarQR(expresion);
+							GenerarPDF(expresion, expresion2);
+							system("start GENERADORQR.jar");
+							system("start GENERADORPDF.jar");
+							GenerarAudio(expresion);
+							*/
+							
+							
 						}
 						else
 						{
@@ -251,8 +285,9 @@ main()
 						system("cls");
 						//imagen();
 						cout << endl << "<<<<<<<<<Gracias por usar nuestro programa>>>>>>>>>" << endl;
+						//imagen();
 						exit(1);
-						main();
+						//main();
 					}
 				}
 				
@@ -276,6 +311,9 @@ char limitacionIngreso(char A[])
 {
 	char letra;
 	int i=0,l=0;
+
+	A[0]='\0';
+	
 	fflush(stdin);
 	letra=getch();
 	while(letra!=13 && i<50)
@@ -283,7 +321,10 @@ char limitacionIngreso(char A[])
 		fflush(stdin);
 		if(letra!=8)
 		{
-			if(letra==123||letra==125||letra==93 ||letra==91 ||letra==94 || letra==42 || letra==43 || letra==47 || letra==45||letra==97 || letra==99 || letra==110 || letra==111|| letra==101|| letra==115|| letra==116 || letra==40 || letra==41|| letra==46|| letra==13 || ((letra>=48)&&(letra<=57)) )
+			if(letra==123||letra==125||letra==93 ||letra==91 ||letra==94 || letra==42 || letra==43 || 
+			letra==47 || letra==45||letra==97 || letra==99 || letra==110 || letra==111|| letra==101|| 
+			letra==115|| letra==116 || letra==40 || letra==41|| letra==46|| letra==13 || letra==32 ||
+			((letra>=48)&&(letra<=57)) )
 			{
 				if(letra!=13)
 				{
@@ -306,7 +347,7 @@ char limitacionIngreso(char A[])
 		}
 		letra=getch();
 	}
-	A[i]='\0';
+	//A[i]='\0';
 	
 }
 
@@ -338,24 +379,33 @@ float operacion(float operando1, float operando2, char operador)
 	}
 }
 
-
-
 int expresionBalanceada (char expresion[])
 {
 	Pila *pilaAuxiliar;
 	int longitudExpresion;//Entrada
-	char valor;
+	char valor[100];
+	char auxiliarValor[100];
+	
 	pilaAuxiliar->crearPila(pilaAuxiliar);
 	longitudExpresion = strlen(expresion);
+	
 	for(int i = 0; i<longitudExpresion; i++)
 	{
+		strcpy(auxiliarValor, "");
+		
 		if(expresion[i] == '(')
 		{
-			pilaAuxiliar->insertarPush(expresion[i],pilaAuxiliar);
+			auxiliarValor[0]='(';
+			auxiliarValor[1]='\0';
+			//pilaAuxiliar->insertarPush(expresion[i],pilaAuxiliar);
+			pilaAuxiliar->insertarPush(auxiliarValor,pilaAuxiliar);
 		}
 		if(expresion[i] == ')')
 		{
-			pilaAuxiliar->extraerPop(&valor, pilaAuxiliar);
+			auxiliarValor[0]=')';
+			auxiliarValor[1]='\0';
+			//pilaAuxiliar->extraerPop(&valor, pilaAuxiliar);
+			pilaAuxiliar->extraerPop(auxiliarValor, pilaAuxiliar);
 		}
 	}
 	if(pilaAuxiliar == NULL)
@@ -363,6 +413,34 @@ int expresionBalanceada (char expresion[])
 		return 1;
 	}
 	return 0;
+}
+
+void invertir(char expresion[])
+{
+	int tam = strlen(expresion);
+	char invertida[tam + 1];
+	int i=0, j=0, k=0;
+
+	
+	for(i=3, j=0 ; i<tam ; i++, j++)
+	{
+		 invertida[j] = expresion[i];
+	}
+	
+	
+	for( k, k=0; k<3; j++, k++)
+	{
+		invertida[j] = expresion[k];
+	}
+	
+	
+	for( j=0; j<tam ; j++)
+	{
+		expresion[j] = invertida[j];
+	}
+
+	expresion[j] = '\0';
+	
 }
 
 int esOperador(char simbolo)
@@ -375,156 +453,324 @@ int esOperador(char simbolo)
 	return 0;
 }
 
-int prioridad (char operador)
+int prioridad (char operador[])
 {
-	if(operador == '^')
+	if(operador[0] == '^')
 	{
 		return 3;
 	}
-	if((operador == '*')||(operador == '/'))
+	if((operador[0] == '*')||(operador[0] == '/'))
 	{
 		return 2;
 	}
-	if((operador=='+')||(operador=='-'))
+	if((operador[0]=='+')||(operador[0]=='-'))
 	{
 		return 1;
 	}
-	if((operador=='(')||(operador==')'))
+	if((operador[0]=='(')||(operador[0]==')'))
 	{
 		return 0;
 	}
 }
 
-Pila *infijaPostfija(char expresion[])
+Pila infijaPostfija(char expresion[], Pila *&original)
 {
 	Pila *pila;;
 	Pila *postFija;
 	int longitudExpresion;
-	char valor;
+	char valor[100];
+	int i,j;
+	
+	char auxiliarDato[100];
 
 	pila->crearPila(pila);
 	postFija->crearPila(postFija);
 
 	longitudExpresion = strlen(expresion);
 
-	for(int i=0; i<longitudExpresion; i++)
+
+	for(i=0; i<longitudExpresion; i++)
 	{
-		if(((expresion[i]>=48)&&(expresion[i]<=57)) || ((expresion[i]>=65)&&(expresion[i]<=90))
-		||((expresion[i]>=97)&&(expresion[i]<=122)))
+		j=0;
+		
+		if(expresion[i]!=' ')
 		{
-			postFija->insertarPilaFinal(expresion[i], postFija);
-		}
-		else
-		{
-			if(expresion [i]=='(')
+			vaciarExpresion(auxiliarDato);
+			if(((expresion[i]>=48)&&(expresion[i]<=57)) || ((expresion[i]>=97)&&(expresion[i]<=122)) )
 			{
-				pila->insertarPush(expresion[i], pila);
+				
+				// validar que ingrese sen cos o tan seguido de (#valor) 
+				if(expresion[i]=='s' || expresion[i]=='c' || expresion[i]=='t') 
+				{
+					j=0;
+					do
+					{
+						if(expresion[i]=='(')
+						{
+							i++;
+							do
+							{
+								auxiliarDato[j]=expresion[i];
+								i++;
+								j++;
+							}while(expresion[i]!=')');
+							i++;
+						}
+						else
+						{
+							auxiliarDato[j]=expresion[i];
+							j++;
+							i++;	
+						}
+						
+					}while(expresion[i]!=' ');
+					invertir(auxiliarDato);
+					auxiliarDato[j]='\0';
+						
+				}
+				else
+				{
+					j=0;
+				
+					do
+					{
+						auxiliarDato[j]=expresion[i];
+						i++;
+						j++;
+					}while(expresion[i]!=' ');
+					
+					auxiliarDato[j]='\0';
+					///cout<<"\nNumeros "<<auxiliarDato<<endl;
+					
+				}
+				
+				postFija->insertarPilaFinal(auxiliarDato, postFija);
+				//postFija->imprimirExpresion(postFija);
 			}
+			//trabajamos en encontrar si son operadores
 			else
 			{
-				if(esOperador(expresion[i]))
+				j=0;
+				vaciarExpresion(auxiliarDato);
+				
+				if(expresion[i]=='(')
 				{
-					if(pila==NULL)
+					auxiliarDato[0]=expresion[i];
+					auxiliarDato[1]='\0';
+					//cout<<"\nNumeros "<<auxiliarDato<<endl;
+					pila->insertarPush(auxiliarDato, pila);
+					//cout<<"\nNumeros "<<auxiliarDato<<endl;
+				}
+				else
+				{
+					if(esOperador(expresion[i]))
 					{
-						pila->insertarPush(expresion[i], pila);
-					}
-					else
-					{
-						while(pila!=NULL)
+						auxiliarDato[0]=expresion[i];
+						auxiliarDato[1]='\0';
+						
+						//cout<<"\nOperador "<<auxiliarDato<<endl;
+						//getch();
+							
+						if(pila==NULL)
 						{
-							if(prioridad(pila->GetSimbolo()) >= prioridad(expresion[i]))
-							{
-								pila->extraerPop(&valor,pila);
-								postFija->insertarPilaFinal(valor,postFija);
-							}
-							else
-							{
-								break;
-							}
+							pila->insertarPush(auxiliarDato, pila);
 						}
-						pila->insertarPush(expresion[i], pila);
+						else
+						{
+							//cout<<"\nHASTA AQUi"<<pila->GetSimbolo()<< endl;	
+							while(pila!=NULL)
+							{
+								if(prioridad(pila->GetSimbolo()) >= prioridad(auxiliarDato))
+								{
+									pila->extraerPop(valor,pila);
+									postFija->insertarPilaFinal(valor,postFija);
+								}
+								else
+								{
+									break;
+								}
+							}
+							pila->insertarPush(auxiliarDato, pila);
+						}
 					}
 				}
 			}
-		}
-		if(expresion[i]==')')
-		{
-			while( (pila->GetSimbolo()!='(') && (pila!=NULL) )
+			
+			//cout<<"\nHASTA AQUI LLEGA 10:"<<endl;	
+			if(expresion[i]==')')
 			{
-				pila->extraerPop(&valor,pila);
-				postFija->insertarPilaFinal(valor,postFija);
+				vaciarExpresion(auxiliarDato);
+				auxiliarDato[0]=expresion[i];
+				auxiliarDato[1]='\0';
+
+				while( ( strcmp(pila->GetSimbolo(), auxiliarDato) == 1 ) && (pila!=NULL) )
+				{
+					pila->extraerPop(valor,pila);
+					postFija->insertarPilaFinal(valor,postFija);
+				}
+				
+				pila->extraerPop(valor,pila);
 			}
-			pila->extraerPop(&valor,pila);
+			
+			
 		}
+		//cout<<"\ndespues de ver que es != de ' ' "<<endl;	
 	}
+	
+	
 	while(pila!=NULL)
 	{
-		pila->extraerPop(&valor,pila);
+		pila->extraerPop(valor,pila);
 		postFija->insertarPilaFinal(valor,postFija);
 	}
-	return postFija;
+	
+	//cout<<"\nSale de la funcion"<<endl;	
+	
+	/*
+	Pila *nueva = postFija;
+	
+	printf("\nInicio de la pila\n");
+	do
+	{
+		cout<<" "<<nueva->GetSimbolo();
+		nueva = nueva->GetPila();
+	}while(nueva!= NULL);
+	printf("\nFin de la pila");
+	*/
+	original = postFija;
+}
+
+float convertirFlotante(char expresion[])
+{
+	int limite = strlen(expresion);
+	int i=0;
+	float aux;
+	
+	for( i=0; i<limite; i++)
+	{
+		aux=48;
+	}
+	
+	return aux;
 }
 
 
 float evaluarPostFija(char expresion[])
 {
-	PilaFloat *pila;
-	int longitud, i, j;
+	PilaFloat *pila = new PilaFloat();
+	int longitud, i, j, k;
 	char valor;
-	float operando1, operando2, resultado;
-
-
+	float operando1;
+	float operando2;
+	float resultado;
+	char valor2[100];
 
 	longitud = strlen(expresion);
-	int angulo=0;
+	float angulo=0;
+	
+	
+	/////
+	Pila *auxiliar = new Pila();
+	auxiliar = NULL;
 
-	for(i=0;i<longitud;i++)
+	////
+	
+	//printf("\n");
+	//cout<<"\nLongitud de la cadena "<<longitud;
+	
+	for(i=0; i<longitud; i++)
 	{
 	    if(expresion[i]!=' ')
         {
-        	
+			vaciarExpresion(valor2);
 			
             if( ((expresion[i]>=48)&&(expresion[i]<=57)) ||  expresion[i]==115 || expresion[i]==99 || expresion[i]==116)
             {
+            	k=0;
+            	vaciarExpresion(valor2);
+            	//printf("\nvalor del angulo: %f", angulo);
             	
+            	do
+            	{
+            		//printf("\nvalor del angulo: %d", expresion[1]);
+            		//if(expresion[i] == 46) //valor2[k] = 44;
+            		valor2[k] = expresion[i];
+            		k++;
+            		i++;
+            		//auxiliar->SetSimbolo(expresion[i]);
+				}while(((expresion[i]>=48)&&(expresion[i]<=57)) || expresion[i]== 46 );
+				
+				//printf("\nvalor del angulo2: %f", angulo);
+				valor2[k]='\0';
+				angulo = atof(valor2);
+			
+				
+				if(expresion[i] == 's' || expresion[i] == 'c' || expresion[i] == 't' )
+				{
+					if(expresion[i] == 's') angulo=sin(angulo);
+					if(expresion[i] == 'c') angulo=cos(angulo);
+					if(expresion[i] == 't') angulo=tan(angulo);
+					i=i+2;
+				}
 
-				valor = expresion[i];
-                pila->insertarPushFloat(atof(&valor),pila);
+				//valor = expresion[i];
+				//printf("\nvalor del angulos: %f", angulo);
+                pila->insertarPushFloat(angulo,pila);
             }
             else
             {
                 if(esOperador(expresion[i]))
                 {
-                    pila->extraerPopFloat(&operando2,pila);
+                    pila->extraerPopFloat(&operando2, pila);
                     pila->extraerPopFloat(&operando1, pila);
+                	//printf("\nOperando 1: %f", operando2);
+                	//printf("\nOperando 2: %f", operando1);
                     resultado = operacion(operando1, operando2, expresion[i]);
+                	//printf("\nRep: %f", resultado);
                     pila->insertarPushFloat(resultado, pila);
                 }
             }
         }
 
 	}
-
+	
 	return pila->GetValor();
 	//return 1;
 }
 
 
-Pila *infijaPrefija(char expresion[])
+Pila infijaPrefija(char expresion[], Pila *&original)
 {
-	Pila *pila, *preFija;
+	/*
+	Pila *pila;
+	Pila *preFija;
 	int longitudExpresion;
-	char valor;
+	char valor[100];
+	int i, j;
+	char auxiliarDato[10];
+
 
 	pila->crearPila(pila);
 	preFija->crearPila(preFija);
 
 	longitudExpresion = strlen(expresion);
 
-	for(int i=longitudExpresion-1; i>=0; i--)
+	//float angulo=0;
+	
+	
+	/////
+	Pila *auxiliar = new Pila();
+	auxiliar = NULL;
+
+	//Pila *pila, *preFija;
+	//int longitudExpresion;
+
+
+	for( i=longitudExpresion-1; i>=0; i--)
 	{
-		if(((expresion[i]>=48)&&(expresion[i]<=57)) || ((expresion[i]>=65)&&(expresion[i]<=90))
-		||((expresion[i]>=97)&&(expresion[i]<=122)))
+		
+		
+		if(((expresion[i]>=48)&&(expresion[i]<=57)) || ((expresion[i]>=97)&&(expresion[i]<=122)) )
 		{
 			preFija->insertarPush(expresion[i], preFija);
 		}
@@ -571,12 +817,28 @@ Pila *infijaPrefija(char expresion[])
 			pila->extraerPop(&valor,pila);
 		}
 	}
+	
+	
+	
 	while(pila!=NULL)
 	{
 		pila->extraerPop(&valor,pila);
 		preFija->insertarPush(valor, preFija);
 	}
+	
+	
+	
 	return preFija;
+
+	*/
+}
+
+void vaciarExpresion(char expresion[])
+{
+	for(int i=0; i<strlen(expresion); i++) 
+	{
+		expresion[i]=' ';	
+	}
 }
 
 void GenerarQR(char expresion[])
@@ -642,9 +904,6 @@ void GenerarPDF(char expresion[], char expresion2[])
 	
 }
 
-
-
-
 void GenerarAudio(char expresion[])
 {
 	FILE *archivo = fopen("Audio.vbs", "w");
@@ -672,7 +931,7 @@ void GenerarAudio(char expresion[])
 	
 }
 
-void* AlgunaFuncion(void* ) 
+void* Agente(void* ) 
 { 
 	system("F:\\agente\\agente\\WinAppManejoMSAgente.exe");
 	return NULL; 
@@ -702,6 +961,7 @@ void recuperar(string name1)
 	printf("Recuperado...");
 	getch();
 }
+
 string generar_1()
 {
 	time_t fsistema=time(0);
@@ -727,7 +987,7 @@ string generar_1()
 	getch();
 	return name1;
 }
-/*
+
 void imagen()
 {
 
@@ -738,10 +998,10 @@ void imagen()
         // filename, handle, ID, ulcX, ulcY, width, height   0,0 auto-adjusts
         BCX_Bitmap("LOGO.bmp",hConWnd,123,230,65,0,0);
         //system("pause>nul");
-        Sleep(3000);
+        Sleep(7000);
+        system("pause");
         //getchar();
     }
     system("cls");
 
 }
-*/

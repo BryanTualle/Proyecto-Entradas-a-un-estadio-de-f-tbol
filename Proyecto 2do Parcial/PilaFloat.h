@@ -151,7 +151,7 @@ void Pila::insertarPilaFinal (char simbolo, PilaFloat *&pila)
 void PilaFloat::extraerPopFloat(float *valor, PilaFloat *&pila)
 {
 	PilaFloat *aux = new PilaFloat();
-	char dato;
+	float dato;
 
 	if(pila == NULL)
 	{

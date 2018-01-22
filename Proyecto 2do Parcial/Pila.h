@@ -9,14 +9,15 @@ using namespace std;
 class Pila
 {
 	private:
-		char simbolo;
+		char simbolo[10];
 		Pila *siguiente;
 
 	public:
 		Pila();
-		Pila(char);
+		Pila(char []);
 
-		char GetSimbolo();
+		char *GetSimbolo();
+		void SetSimbolo(char argumento[]);
 		void SetSimbolo(char argumento);
 
 		Pila* GetPila();
@@ -27,9 +28,9 @@ class Pila
 
 		//////////////////
 		void crearPila(Pila *&);
-		void insertarPush(char simbolo, Pila *&);
-       	void insertarPilaFinal (char simbolo, Pila *&);
-        void extraerPop(char *valor, Pila *&);
+		void insertarPush(char simbolo[], Pila *&);
+       	void insertarPilaFinal (char simbolo[], Pila *&);
+        void extraerPop(char valor[], Pila *&);
         void imprimirExpresion(Pila *lista);
 		void infijaPostfija(char expresion[]);
 		void infijaPrefija(char expresion[]);
@@ -42,21 +43,42 @@ Pila::Pila()
 {
 }
 
-Pila::Pila(char caracter)
+Pila::Pila(char caracter[])
 {
-	simbolo = caracter;
+	strcpy(simbolo, caracter);
+	//simbolo = caracter;
 
 }
 
-char Pila::GetSimbolo()
+char* Pila::GetSimbolo()
 {
 	return simbolo;
 }
 
+void Pila::SetSimbolo(char argumento[])
+{
+	int limi = 0;
+	limi = strlen(argumento);
+	
+	for(int i=0; i<limi; i++) 
+	{
+		simbolo[i] = argumento[i];	
+	}
+	simbolo[limi]='\0';
+	
+	
+	argumento[1]=='\0';
+}
+
 void Pila::SetSimbolo(char argumento)
 {
-	simbolo = argumento;
+	char valor[2];
+	valor[0] = argumento;
+	valor[1] = '\0';
+	
+	
 }
+
 
 Pila* Pila::GetPila()
 {
@@ -112,27 +134,31 @@ void Pila::crearPila(Pila *&pila)
 	pila = NULL;
 }
 
-void Pila::insertarPush(char simbolo, Pila *&pila) //INGRESO TOPE DE LA PILA, INICIO LISTA
+void Pila::insertarPush(char simbolo[], Pila *&pila) //INGRESO TOPE DE LA PILA, INICIO LISTA
 {
 	Pila *nuevo = new Pila();
 	
 	if(nuevo!=NULL)
 	{
-		nuevo->simbolo = simbolo;
+		strcpy(nuevo->GetSimbolo(),simbolo);
+		//cout<<"\n "<<nuevo->simbolo;
 		nuevo->siguiente = pila;
 		pila = nuevo;
 	}
 }
 
-void Pila::insertarPilaFinal (char simbolo, Pila *&pila)
+void Pila::insertarPilaFinal (char simbolo[], Pila *&pila)
 {
 	Pila *nuevo = new Pila();
 	Pila *aux;
 	
 	if(nuevo!=NULL)
 	{
-		nuevo->simbolo = simbolo;
+		nuevo->SetSimbolo(simbolo);
 		nuevo->siguiente = NULL;
+		
+		//cout<< "\n NUEVO "<<nuevo->simbolo<<endl;
+		//getch();
 		if(pila == NULL)
 		{
 			pila = nuevo;
@@ -145,15 +171,18 @@ void Pila::insertarPilaFinal (char simbolo, Pila *&pila)
 				aux = aux->siguiente;
 			}
 			aux->siguiente = nuevo;
+			//pila = aux;
 		}
 	}
+	
 }
 
-void Pila::extraerPop(char *valor, Pila *&pila)
+void Pila::extraerPop(char valor[], Pila *&pila)
 {
-	Pila *aux = new Pila();
-	char dato;
-
+	Pila *aux;
+	char dato[10];
+	
+	/*
 	if(pila == NULL)
 	{
 		cout<<"\nPILAS VACIA!!";
@@ -161,42 +190,70 @@ void Pila::extraerPop(char *valor, Pila *&pila)
 	else
 	{
 		aux = pila;
-		dato = aux->simbolo;
-		pila = aux->siguiente;
-		*valor = dato;
+		strcpy(dato, aux->GetSimbolo());
+		//dato = aux->simbolo;
+		aux = aux->GetPila();
+		pila = aux;
+		strcpy(valor, dato);
+	}
+	*/
+	if(pila != NULL)
+	{
+		aux = pila;
+		strcpy(dato, aux->GetSimbolo());
+		//dato = aux->simbolo;
+		aux = aux->GetPila();
+		pila = aux;
+		strcpy(valor, dato);
 	}
 
 }
 
 void Pila::imprimirExpresion(Pila *lista)
 {
-	Pila *aux = new Pila();
+	Pila *aux;
 	
 	aux = lista;
 	
 	while(aux!=NULL)
 	{
-		//cout<<" "<<aux->simbolo;
-		cout<<aux->simbolo;
+		cout<<" "<<aux->simbolo;
+		//cout<<" 1 |"<<aux->simbolo;
 		aux = aux->siguiente;
 	}
 }
 
 void Pila::obtenerExpresion(Pila *lista, char expresion[])
 {
-	Pila *aux = new Pila();
+	
+	Pila *aux;
 	int i=0;
 	aux = lista;
+	char vacia[2];
+	vacia[0]=32;
+	vacia[1]='\0';
 	
-	while(aux!=NULL)
+	
+	for(i=0; i<strlen(expresion); i++)
 	{
-		expresion[i]=aux->simbolo;
+		expresion[i]='\0';
+	}
+	
+	//expresion[0]='\0';	
+	do
+	{
+		strcat(expresion, aux->simbolo);
+		strcat(expresion, vacia);
+		//strcat()expresion[i+2]= '\0';
+		//expresion[i]=aux->simbolo;
 		aux = aux->siguiente;
 		i++;
-	}
-	expresion[i]='\0';
+	}while(aux!=NULL);
+	//expresion[i]='\0';
+
 }
 
+// revisar funcion obtener expresion
 
 
 
